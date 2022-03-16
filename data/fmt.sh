@@ -12,6 +12,7 @@ _write="${2}"
 _diff="${3}"
 _check="${4}"
 _file="${5}"
+_short_output="${6}"
 # shellcheck disable=SC2155
 _temp="/tmp/$(basename "${_file}").tf"
 _ret=0
@@ -41,10 +42,19 @@ fi
 ###
 ### Output and execute command
 ###
-echo "${_cmd} ${_file}"
+if [ "$_short_output" = "0" ]; then
+  echo "${_cmd} ${_file}"
+fi
+
 cp -f "${_file}" "${_temp}"
-if ! eval "${_cmd} ${_temp}"; then
-	_ret=1
+_output=`${_cmd} ${_temp} 2>&1`
+
+if [ ! "${?}" = "0" ]; then
+  if [ "$_short_output" = "1" ]; then
+    echo "${_cmd} ${_file}"
+  fi
+  echo "${_output}"
+  _ret="1"
 fi
 
 ###

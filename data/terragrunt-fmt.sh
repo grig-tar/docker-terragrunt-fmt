@@ -15,6 +15,7 @@ ARG_CHECK=0
 ARG_RECURSIVE=0
 ARG_IGNORE=
 ARG_PATH=
+ARG_SHORT_OUTPUT=0
 
 
 # --------------------------------------------------------------------------------
@@ -51,6 +52,8 @@ print_usage() {
 	echo
 	echo "  -ignore=a,b    Comma separated list of paths to ignore."
 	echo "                 The wildcard character '*' is supported."
+  echo
+	echo "  -short         Show in log only not properly formatted files."
 }
 
 
@@ -186,6 +189,23 @@ if [ "${#}" -gt "0" ]; then
 				fi
 				shift
 				;;
+      # Short output
+      -short | -short=*)
+				if [ "${1}" = "-short" ]; then
+					ARG_SHORT_OUTPUT=1
+				else
+					_ARG="${1##*=}"
+					if [ "${_ARG}" = "true" ]; then
+						ARG_SHORT_OUTPUT=1
+					elif [ "${_ARG}" = "false" ]; then
+						ARG_SHORT_OUTPUT=0
+					else
+						>&2 echo "Error, -short can only be set to 'true' or 'false', you had: '${_ARG}'"
+						exit 1
+					fi
+				fi
+				shift
+				;;
 			# Any other arguments are invalid
 			-*)
 				>&2 echo "Error, '${1}' is an unsupported argument"
@@ -246,7 +266,7 @@ fi
 ### (1/3) Single file
 ###
 if [ -f "${ARG_PATH}" ]; then
-	/fmt.sh "${ARG_LIST}" "${ARG_WRITE}" "${ARG_DIFF}" "${ARG_CHECK}" "${ARG_PATH}"
+	/fmt.sh "${ARG_LIST}" "${ARG_WRITE}" "${ARG_DIFF}" "${ARG_CHECK}" "${ARG_PATH}" "${ARG_SHORT_OUTPUT}"
 	exit "${?}"
 else
 	###
@@ -268,7 +288,7 @@ else
 		echo "[INFO] Finding files: ${find_cmd}"
 		eval "${find_cmd} -print0 | xargs -n1 -0 sh -c '\
 			if [ -f \"\${1}\" ]; then \
-				if ! /fmt.sh \"${ARG_LIST}\" \"${ARG_WRITE}\" \"${ARG_DIFF}\" \"${ARG_CHECK}\" \"\${1}\"; then \
+				if ! /fmt.sh \"${ARG_LIST}\" \"${ARG_WRITE}\" \"${ARG_DIFF}\" \"${ARG_CHECK}\" \"\${1}\" \"${ARG_SHORT_OUTPUT}\"; then \
 					echo 1 > /tmp/exit.txt; \
 				fi \
 			fi' --"
@@ -284,7 +304,7 @@ else
 		ret=0
 		for file in *.hcl; do
 			if [ -f "${file}" ]; then
-				if ! /fmt.sh "${ARG_LIST}" "${ARG_WRITE}" "${ARG_DIFF}" "${ARG_CHECK}" "${file}"; then
+				if ! /fmt.sh "${ARG_LIST}" "${ARG_WRITE}" "${ARG_DIFF}" "${ARG_CHECK}" "${file}" ${ARG_SHORT_OUTPUT}; then
 					ret="1"
 				fi
 			fi
